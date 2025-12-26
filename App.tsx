@@ -26,7 +26,46 @@ const App: React.FC = () => {
   
   const [projects, setProjects] = useState<ScrapingProject[]>([
     {
-      id: '1',
+      id: 'demo-taladnudbaan',
+      name: 'ตลาดนัดบ้าน - อสังหาฯ ปราจีนบุรี',
+      targetUrl: 'https://www.taladnudbaan.com/properties?where=%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%88%E0%B8%B5%E0%B8%99%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&',
+      intent: 'ดึงข้อมูลบ้านและที่ดินในปราจีนบุรี พร้อมบันทึกราคาและทำเลลง Google Drive อัตโนมัติ',
+      status: 'active',
+      health: 100,
+      lastRun: '10 นาทีที่แล้ว',
+      spiderCode: `import scrapy
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
+
+class TaladNudBaanSpider(scrapy.Spider):
+    name = "demo_prachinburi"
+    start_urls = ["https://www.taladnudbaan.com/properties?where=%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%88%E0%B8%B5%E0%B8%99%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&"]
+
+    def parse(self, response):
+        # AI-Generated Selectors สำหรับ taladnudbaan.com
+        for item in response.css(".property-card, .listing-item, .card"):
+            yield {
+                "title": item.css(".title::text, h3::text, .property-name::text").get(),
+                "price": item.css(".price::text, .amount::text, .price-tag::text").get(),
+                "location": item.css(".location::text, .address::text").get(),
+                "url": response.urljoin(item.css("a::attr(href)").get())
+            }
+
+        # ระบบ Pagination อัตโนมัติ
+        next_page = response.css("a.next::attr(href), a[rel='next']::attr(href)").get()
+        if next_page:
+            yield response.follow(next_page, self.parse)
+
+class GoogleDrivePipeline:
+    def close_spider(self, spider):
+        # โค้ดส่วนนี้ AI จะช่วยเขียนเพื่ออัปโหลด CSV เข้า Google Drive ของคุณ
+        spider.logger.info("กำลังอัปโหลด CSV ไปยัง Google Drive...")
+        # [Google Drive Auth & Upload Logic Here]
+        spider.logger.info("อัปโหลดสำเร็จ!")`,
+      googleDriveEnabled: true
+    },
+    {
+      id: '2',
       name: 'จับตาคู่แข่ง Amazon',
       targetUrl: 'https://amazon.com/s?k=gaming+laptops',
       intent: 'ติดตามราคาโน้ตบุ๊กเกมมิ่งทุกวัน',
@@ -34,12 +73,12 @@ const App: React.FC = () => {
       health: 98,
       lastRun: '2 ชั่วโมงที่แล้ว',
       spiderCode: 'import scrapy\n\nclass AmazonSpider(scrapy.Spider):\n    name = "amazon"\n    start_urls = ["https://amazon.com/s?k=gaming+laptops"]\n\n    def parse(self, response):\n        for product in response.css("div.s-result-item"):\n            yield {\n                "name": product.css("h2 span::text").get(),\n                "price": product.css("span.a-price-whole::text").get(),\n            }',
-      googleDriveEnabled: true
+      googleDriveEnabled: false
     }
   ]);
 
   const addProject = (p: ScrapingProject) => {
-    setProjects(prev => [...prev, p]);
+    setProjects(prev => [p, ...prev]);
     setCurrentView(AppView.DASHBOARD);
   };
 
@@ -129,7 +168,6 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-[#020617]">
         <header className="h-16 border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 bg-[#020617]/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-4">

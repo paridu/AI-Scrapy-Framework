@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Play, Pause, RefreshCw, Trash2, Code, History, Activity, Loader2, Sparkles, Cloud, Check } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RefreshCw, Trash2, Code, History, Activity, Loader2, Sparkles, Cloud, Check, Eye, Table as TableIcon, X } from 'lucide-react';
 import { ScrapingProject } from '../types';
-import { refactorSpider } from '../services/geminiService';
+import { refactorSpider, generateMockResults } from '../services/geminiService';
 
 interface ProjectDetailProps {
   project: ScrapingProject;
@@ -13,6 +13,9 @@ interface ProjectDetailProps {
 
 const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdateStatus, onUpdateCode, onBack }) => {
   const [isRefactoring, setIsRefactoring] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   const [driveEnabled, setDriveEnabled] = useState(project.googleDriveEnabled || false);
 
   const mockActivity = [
@@ -35,6 +38,19 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdateStatus, 
     }
   };
 
+  const handlePreview = async () => {
+    setIsPreviewing(true);
+    setShowPreview(true);
+    try {
+      const results = await generateMockResults(project.spiderCode, project.intent);
+      setPreviewData(results);
+    } catch (error) {
+      console.error('Failed to generate preview:', error);
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -51,6 +67,15 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdateStatus, 
         </div>
         
         <div className="flex items-center gap-3">
+          <button 
+            onClick={handlePreview}
+            disabled={isPreviewing}
+            className="bg-purple-600/10 text-purple-400 border border-purple-600/20 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-purple-600/20 transition-all font-semibold"
+          >
+            {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+            ดูตัวอย่างข้อมูล
+          </button>
+
           <button 
             onClick={() => setDriveEnabled(!driveEnabled)}
             className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all font-semibold border ${
@@ -86,6 +111,52 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdateStatus, 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
+          {showPreview && (
+            <div className="bg-slate-900 border border-purple-500/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
+              <div className="px-6 py-4 bg-purple-600/10 border-b border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TableIcon className="w-4 h-4 text-purple-400" />
+                  <span className="font-semibold text-purple-200 text-sm">ตัวอย่างผลลัพธ์ข้อมูล (Simulation)</span>
+                </div>
+                <button onClick={() => setShowPreview(false)} className="text-slate-500 hover:text-white transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-0 overflow-x-auto max-h-[400px]">
+                {isPreviewing ? (
+                  <div className="p-20 flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                    <p className="text-purple-300 text-sm animate-pulse font-medium tracking-wide">AI กำลังจำลองข้อมูลตามโค้ดของคุณ...</p>
+                  </div>
+                ) : previewData.length > 0 ? (
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-slate-950 border-b border-slate-800">
+                      <tr>
+                        {Object.keys(previewData[0]).map((key) => (
+                          <th key={key} className="px-4 py-3 font-semibold text-slate-400 uppercase tracking-tighter text-[11px]">{key}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {previewData.map((row, i) => (
+                        <tr key={i} className="hover:bg-slate-800/40 transition-colors">
+                          {Object.values(row).map((val: any, j) => (
+                            <td key={j} className="px-4 py-3 text-slate-300 font-medium">{val}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-12 text-center text-slate-500">ไม่สามารถจำลองข้อมูลได้ในขณะนี้</div>
+                )}
+              </div>
+              <div className="px-6 py-2 bg-purple-600/5 text-[10px] text-purple-400 font-medium italic border-t border-slate-800">
+                * ข้อมูลนี้เป็นการจำลองโดย AI เพื่อแสดงโครงสร้างผลลัพธ์ที่คาดหวัง
+              </div>
+            </div>
+          )}
+
           <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="px-6 py-4 bg-slate-800/40 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">

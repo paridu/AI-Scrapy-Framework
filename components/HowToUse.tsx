@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BookOpen, Search, Wand2, Cloud, Terminal, Sparkles, CheckCircle } from 'lucide-react';
+import { BookOpen, Search, Wand2, Cloud, Terminal, Sparkles, CheckCircle, PlayCircle } from 'lucide-react';
 
 const HowToUse: React.FC = () => {
   return (
@@ -12,6 +12,22 @@ const HowToUse: React.FC = () => {
         <p className="text-slate-400 text-lg">
           เปลี่ยนความต้องการของคุณให้เป็นระบบดูดข้อมูลอัตโนมัติในไม่กี่คลิก
         </p>
+      </div>
+
+      <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 p-8 rounded-3xl shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
+          <PlayCircle className="w-24 h-24 text-blue-500" />
+        </div>
+        <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+          <Sparkles className="text-amber-400 w-6 h-6" /> ลองดูโปรเจกต์ Demo!
+        </h3>
+        <p className="text-slate-300 mb-6 leading-relaxed relative z-10">
+          เราได้เตรียม Demo การดูดข้อมูลจากเว็บไซต์ <strong>ตลาดนัดบ้าน (taladnudbaan.com)</strong> ไว้ให้แล้วในหน้าหลัก 
+          คุณสามารถเข้าไปดูโค้ดที่ AI สร้างขึ้น และจำลองการรันเพื่อดูว่าระบบทำงานอย่างไร พร้อมการส่งออก CSV ไปยัง Google Drive อัตโนมัติ
+        </p>
+        <button className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/40 relative z-10">
+          ไปที่หน้าหลักเพื่อดู Demo
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -48,7 +64,7 @@ const HowToUse: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-4">
+        <div className="bg-amber-600/20 border border-amber-600/20 bg-slate-900/50 p-8 rounded-3xl shadow-xl space-y-4">
           <div className="bg-amber-600/20 w-12 h-12 rounded-2xl flex items-center justify-center">
             <Terminal className="text-amber-400 w-6 h-6" />
           </div>

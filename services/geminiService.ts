@@ -54,6 +54,31 @@ export const generateSpider = async (intent: string, url: string, fields: string
 };
 
 /**
+ * สร้างข้อมูลตัวอย่าง (Mock Results) จากโค้ด Spider และ Intent
+ */
+export const generateMockResults = async (spiderCode: string, intent: string) => {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: `Based on this Scrapy spider code and intent:
+    Intent: ${intent}
+    Code: ${spiderCode}
+    Generate 5 realistic mock data records as they would appear in a CSV/JSON output. Return as a JSON array of objects. Make the data look very realistic according to the target site and intent.`,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          additionalProperties: { type: Type.STRING }
+        }
+      }
+    }
+  });
+  return JSON.parse(response.text || '[]');
+};
+
+/**
  * ปรับปรุง Spider ตาม Log ด้วย Gemini 3 Pro
  */
 export const refactorSpider = async (currentCode: string, logs: string, intent: string) => {

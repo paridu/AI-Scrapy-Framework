@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Plus, Play, Pause, AlertCircle, CheckCircle2, MoreVertical, ExternalLink, Database } from 'lucide-react';
+import { Plus, Play, Pause, AlertCircle, CheckCircle2, MoreVertical, ExternalLink, Database, Sparkles } from 'lucide-react';
 import { ScrapingProject } from '../types';
 
 interface DashboardProps {
@@ -59,11 +59,21 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onSelectProject, onAddP
               >
                 <td className="px-6 py-5">
                   <div className="flex items-center gap-3">
-                    <div className="bg-slate-800 p-2 rounded-lg group-hover:bg-slate-700 transition-colors">
+                    <div className="bg-slate-800 p-2 rounded-lg group-hover:bg-slate-700 transition-colors relative">
                       <Database className="w-5 h-5 text-blue-400" />
+                      {project.id.startsWith('demo-') && (
+                        <div className="absolute -top-1 -right-1">
+                          <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                        </div>
+                      )}
                     </div>
                     <div>
-                      <div className="font-semibold text-white">{project.name}</div>
+                      <div className="font-semibold text-white flex items-center gap-2">
+                        {project.name}
+                        {project.id.startsWith('demo-') && (
+                          <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">Demo</span>
+                        )}
+                      </div>
                       <div className="text-xs text-slate-500 truncate max-w-[200px]">{project.targetUrl}</div>
                     </div>
                   </div>
