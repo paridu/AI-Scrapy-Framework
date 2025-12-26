@@ -1,0 +1,5 @@
+{
+  "name": "AI-Scrapy Framework",
+  "description": "An intent-driven, AI-powered web scraping framework built on the concept of ScrapydWeb, enabling users to generate, deploy, and monitor self-healing spiders using natural language.",
+  "requestFramePermissions": []
+}
