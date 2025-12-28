@@ -21,7 +21,8 @@ import {
   Settings2,
   AlertTriangle,
   ToggleLeft as ToggleOff,
-  ToggleRight as ToggleOn
+  ToggleRight as ToggleOn,
+  CheckCircle2
 } from 'lucide-react';
 import { ScrapingProject } from '../types';
 import { refactorSpider, generateMockResults } from '../services/geminiService';
@@ -42,11 +43,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onBack 
 }) => {
   const [isRefactoring, setIsRefactoring] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Mock logs for diagnostics
+  // Mock logs for diagnostics as requested
   const mockActivity = [
     { time: '2 นาทีที่แล้ว', action: `ตรวจพบข้อมูลใหม่ และดึงสำเร็จรวม 94,016 รายการ`, result: 'Success' },
     { time: '1 ชั่วโมงที่แล้ว', action: 'เริ่มรันงานประจำวัน (Daily Full Crawl)', result: 'Success' },
@@ -55,7 +57,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const logsString = mockActivity.map(l => `[${l.time}] ${l.action} - Result: ${l.result}`).join('\n');
 
-  // Check if the current code likely lacks Drive integration logic while enabled
+  // Logic to determine if code update is recommended (e.g., mismatch in Drive settings)
   const needsRefactor = useMemo(() => {
     if (project.googleDriveEnabled && !project.spiderCode.includes('GoogleDrivePipeline') && !project.spiderCode.includes('pydrive2')) {
       return true;
@@ -63,9 +65,15 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
     return false;
   }, [project.googleDriveEnabled, project.spiderCode]);
 
+  /**
+   * Triggers the AI to refactor the current spider code based on 
+   * existing code, logs, intent, and current Drive settings.
+   */
   const handleAIRefactor = async () => {
     setIsRefactoring(true);
+    setShowSuccess(false);
     try {
+      // Calls geminiService to perform the refactor
       const updatedCode = await refactorSpider(
         project.spiderCode, 
         logsString, 
@@ -73,8 +81,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
         project.googleDriveEnabled
       );
       
+      // Updates the project state if the refactor was successful
       if (updatedCode) {
         onUpdateCode(project.id, updatedCode);
+        setShowSuccess(true);
+        // Feedback message fades out after 3 seconds
+        setTimeout(() => setShowSuccess(false), 3000);
       }
     } catch (error) {
       console.error('Failed to refactor spider:', error);
@@ -206,7 +218,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <button 
                         onClick={handleAIRefactor}
                         disabled={isRefactoring}
-                        className="mt-3 bg-amber-500 hover:bg-amber-400 text-slate-900 text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
+                        className="mt-3 bg-amber-500 hover:bg-amber-400 text-slate-900 text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-amber-900/40"
                       >
                         {isRefactoring ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                         Refactor Code ทันที
@@ -298,6 +310,11 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 <span className="font-semibold text-slate-200">โค้ด Spider (Python)</span>
               </div>
               <div className="flex items-center gap-2">
+                {showSuccess && (
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-1 rounded border border-emerald-400/20 animate-in fade-in slide-in-from-right-2">
+                    <CheckCircle2 className="w-3 h-3" /> อัปเดตสำเร็จ!
+                  </span>
+                )}
                 {project.googleDriveEnabled && (
                   <span className="flex items-center gap-1 text-[10px] text-blue-400 font-bold bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20">
                     <Cloud className="w-3 h-3" /> Drive Enabled
@@ -306,10 +323,10 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 <button 
                   onClick={handleAIRefactor}
                   disabled={isRefactoring}
-                  className={`text-xs flex items-center gap-1 font-medium px-2 py-1 rounded transition-all border ${
+                  className={`text-xs flex items-center gap-1 font-medium px-3 py-1.5 rounded-xl transition-all border ${
                     needsRefactor 
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
-                    : 'bg-blue-400/10 text-blue-400 border-blue-400/10 hover:bg-blue-400/20'
+                    ? 'bg-amber-500 text-slate-900 border-amber-500 font-bold shadow-lg shadow-amber-900/20' 
+                    : 'bg-blue-600/10 text-blue-400 border-blue-600/20 hover:bg-blue-600/20'
                   } disabled:opacity-50`}
                 >
                   {isRefactoring ? (
@@ -317,7 +334,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   ) : (
                     <RefreshCw className="w-3 h-3" />
                   )}
-                  AI ปรับปรุงโค้ด
+                  AI Refactor Code
                 </button>
               </div>
             </div>
