@@ -32,7 +32,7 @@ export const analyzeIntent = async (intent: string, url: string) => {
  */
 export const generateSpider = async (intent: string, url: string, fields: string[], saveToDrive: boolean = false) => {
   const ai = getAI();
-  const driveLogic = saveToDrive ? "Include a Scrapy Pipeline that exports results to a CSV and uses Google Drive API (pydrive2) to upload the file automatically after the crawl finishes." : "Standard CSV export pipeline.";
+  const driveLogic = saveToDrive ? "Include a Scrapy Pipeline that exports results to a CSV and uses Google Drive API (pydrive2) to upload the file automatically after the crawl finishes. Ensure OAuth2 flow is commented or mocked properly for system integration." : "Standard CSV export pipeline.";
   
   const prompt = `Write a production-grade Scrapy spider for ${url}. 
   Intent: ${intent}. 
@@ -63,16 +63,11 @@ export const generateMockResults = async (spiderCode: string, intent: string) =>
     contents: `Based on this Scrapy spider code and intent:
     Intent: ${intent}
     Code: ${spiderCode}
-    Generate 5 realistic mock data records as they would appear in a CSV/JSON output. Return as a JSON array of objects. Make the data look very realistic according to the target site and intent.`,
+    Generate 5 realistic mock data records as they would appear in a CSV/JSON output. 
+    Return as a JSON array of objects. 
+    Make the data look very realistic according to the target site and intent.`,
     config: {
       responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          additionalProperties: { type: Type.STRING }
-        }
-      }
     }
   });
   return JSON.parse(response.text || '[]');
@@ -81,10 +76,13 @@ export const generateMockResults = async (spiderCode: string, intent: string) =>
 /**
  * ปรับปรุง Spider ตาม Log ด้วย Gemini 3 Pro
  */
-export const refactorSpider = async (currentCode: string, logs: string, intent: string) => {
+export const refactorSpider = async (currentCode: string, logs: string, intent: string, saveToDrive: boolean = false) => {
   const ai = getAI();
+  const driveRequirement = saveToDrive ? "CRITICAL: The updated code MUST include or maintain a Scrapy Pipeline for Google Drive upload (pydrive2)." : "Standard export is fine.";
+  
   const prompt = `Refactor this Scrapy spider code.
   Original Intent: ${intent}
+  ${driveRequirement}
   Current Code:
   \`\`\`python
   ${currentCode}
@@ -93,7 +91,7 @@ export const refactorSpider = async (currentCode: string, logs: string, intent: 
   \`\`\`
   ${logs}
   \`\`\`
-  แก้ไขปัญหา Selector, Bot detection หรือโครงสร้างเว็บที่เปลี่ยนไป
+  แก้ไขปัญหา Selector, Bot detection หรือโครงสร้างเว็บที่เปลี่ยนไป และรวมตรรกะ Google Drive ตามความต้องการ
   Return ONLY the updated Python code.`;
 
   const response = await ai.models.generateContent({
@@ -101,7 +99,7 @@ export const refactorSpider = async (currentCode: string, logs: string, intent: 
     contents: prompt,
     config: {
       thinkingConfig: { thinkingBudget: 32768 },
-      systemInstruction: "คุณคือเอเจนท์ซ่อมแซมโค้ดอัตโนมัติ แก้ไข Spider โดยวิเคราะห์จาก Log ความผิดพลาด"
+      systemInstruction: "คุณคือเอเจนท์ซ่อมแซมโค้ดอัตโนมัติ แก้ไข Spider โดยวิเคราะห์จาก Log ความผิดพลาด และปรับจูนฟีเจอร์ตามสถานะ Google Drive"
     }
   });
 

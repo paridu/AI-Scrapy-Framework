@@ -9,6 +9,7 @@ import {
   Settings, 
   Menu,
   BookOpen,
+  Cloud,
 } from 'lucide-react';
 import { AppView, ScrapingProject } from './types';
 import Dashboard from './components/Dashboard';
@@ -18,6 +19,7 @@ import DataInsights from './components/DataInsights';
 import LogViewer from './components/LogViewer';
 import AIChatBot from './components/AIChatBot';
 import HowToUse from './components/HowToUse';
+import DriveExplorer from './components/DriveExplorer';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
@@ -27,9 +29,9 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<ScrapingProject[]>([
     {
       id: 'demo-taladnudbaan',
-      name: 'ตลาดนัดบ้าน - อสังหาฯ ปราจีนบุรี',
+      name: 'ตลาดนัดบ้าน - อสังหาฯ (AHP Analysis)',
       targetUrl: 'https://www.taladnudbaan.com/properties?where=%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%88%E0%B8%B5%E0%B8%99%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&',
-      intent: 'ดึงข้อมูลบ้านและที่ดินในปราจีนบุรี พร้อมบันทึกราคาและทำเลลง Google Drive อัตโนมัติ',
+      intent: 'ดึงข้อมูลทรัพย์สินทั้งหมด (94,016 รายการ) พร้อมฟิลด์ ราคา, พื้นที่, ห้องนอน, ห้องน้ำ, ประเภททรัพย์ และทำเล เพื่อใช้ทำ AHP Analysis',
       status: 'active',
       health: 100,
       lastRun: '10 นาทีที่แล้ว',
@@ -38,30 +40,31 @@ from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
 class TaladNudBaanSpider(scrapy.Spider):
-    name = "demo_prachinburi"
+    name = "ahp_property_analyzer"
     start_urls = ["https://www.taladnudbaan.com/properties?where=%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%88%E0%B8%B5%E0%B8%99%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&"]
 
     def parse(self, response):
-        # AI-Generated Selectors สำหรับ taladnudbaan.com
+        # AI-Optimized Selectors for AHP Data Points
         for item in response.css(".property-card, .listing-item, .card"):
             yield {
                 "title": item.css(".title::text, h3::text, .property-name::text").get(),
-                "price": item.css(".price::text, .amount::text, .price-tag::text").get(),
-                "location": item.css(".location::text, .address::text").get(),
+                "price_numeric": self.clean_price(item.css(".price::text, .amount::text").get()),
+                "area_sqm": item.css(".area-value::text, .sqm::text").get(),
+                "bedrooms": item.css(".bed-count::text, .beds::text").get(),
+                "bathrooms": item.css(".bath-count::text, .baths::text").get(),
+                "property_type": item.css(".category::text, .type::text").get(),
+                "location_zone": item.css(".location::text, .district::text").get(),
                 "url": response.urljoin(item.css("a::attr(href)").get())
             }
 
-        # ระบบ Pagination อัตโนมัติ
+        # Handle deep pagination for 90k+ items
         next_page = response.css("a.next::attr(href), a[rel='next']::attr(href)").get()
         if next_page:
             yield response.follow(next_page, self.parse)
 
-class GoogleDrivePipeline:
-    def close_spider(self, spider):
-        # โค้ดส่วนนี้ AI จะช่วยเขียนเพื่ออัปโหลด CSV เข้า Google Drive ของคุณ
-        spider.logger.info("กำลังอัปโหลด CSV ไปยัง Google Drive...")
-        # [Google Drive Auth & Upload Logic Here]
-        spider.logger.info("อัปโหลดสำเร็จ!")`,
+    def clean_price(self, price_str):
+        if not price_str: return 0
+        return "".join(filter(str.isdigit, price_str))`,
       googleDriveEnabled: true
     },
     {
@@ -90,8 +93,13 @@ class GoogleDrivePipeline:
     setProjects(prev => prev.map(p => p.id === id ? { ...p, spiderCode: code } : p));
   };
 
+  const updateProjectDriveSetting = (id: string, enabled: boolean) => {
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, googleDriveEnabled: enabled } : p));
+  };
+
   const navItems = [
     { id: AppView.DASHBOARD, label: 'หน้าหลัก', icon: LayoutDashboard },
+    { id: AppView.DRIVE_EXPLORER, label: 'Google Drive', icon: Cloud },
     { id: AppView.INSIGHTS, label: 'ข้อมูลวิเคราะห์', icon: Database },
     { id: AppView.LOGS, label: 'บันทึกระบบ', icon: Terminal },
     { id: AppView.HOW_TO_USE, label: 'วิธีใช้งาน', icon: BookOpen },
@@ -119,6 +127,7 @@ class GoogleDrivePipeline:
             project={project} 
             onUpdateStatus={updateProjectStatus}
             onUpdateCode={updateProjectCode}
+            onUpdateDriveSetting={updateProjectDriveSetting}
             onBack={() => setCurrentView(AppView.DASHBOARD)} 
           />
         ) : <div className="p-8">ไม่พบโปรเจกต์</div>;
@@ -128,6 +137,8 @@ class GoogleDrivePipeline:
         return <LogViewer />;
       case AppView.HOW_TO_USE:
         return <HowToUse />;
+      case AppView.DRIVE_EXPLORER:
+        return <DriveExplorer />;
       default:
         return <Dashboard projects={projects} onSelectProject={setSelectedProjectId} onAddProject={() => {}} />;
     }
